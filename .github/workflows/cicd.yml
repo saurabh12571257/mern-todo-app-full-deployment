@@ -51,7 +51,6 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
-          cd /home/ubuntu/mern-todo-app   
           sudo apt-get update
           sudo apt-get install -y docker.io
           sudo apt-get install -y docker-compose-plugin
