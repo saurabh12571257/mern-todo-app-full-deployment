@@ -63,5 +63,5 @@ jobs:
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
           
           # restart containers
-          docker-compose down || true
-          docker-compose up -d --build
+          docker compose down || true
+          docker compose up -d --build
