@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mongodb:
     image: 'mongo'
@@ -10,10 +8,10 @@ services:
       - com.prometheus.port=9100
     volumes:
       - data:/data/db
-      
+
 
   backend:
-    build: ./backend
+    image: saurabhdave59/mern-backend:latest
     ports:
       - "8000:8000"
     environment:
@@ -78,7 +76,7 @@ services:
       - com.prometheus.port=8000
 
   frontend:
-    build: ./frontend
+    image: saurabhdave59/mern-frontend:latest
     ports:
       - "3000:3000"
     environment:
