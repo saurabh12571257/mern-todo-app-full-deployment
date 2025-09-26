@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: 'mongo'
+    ports:
+      - "27017:27017"
+    labels:
+      - com.prometheus.scrape=true
+      - com.prometheus.port=9100
+    volumes:
+      - data:/data/db
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mydatabase
+      - JWT_SECRET= ${jwt}
+    depends_on:
+      - mongodb
+    hostname: mybackendhostname
+    labels:
+      - com.prometheus.scrape=true
+      - com.prometheus.port=8000
+    
+
+  mongodb-expoter:
+    image: bitnami/node-exporter:latest
+    environment:
+      - MONGODB_URI=${mongo_uri}
+    ports:
+      - "9100:9100"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    hostname: mymongodb
+    depends_on:
+      - mongodb
+  
+  prometheus:
+    image: "prom/prometheus" 
+    ports:
+      - "9090:9090"  
+    volumes:
+      - ./prometheus:/etc/prometheus  
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    depends_on:
+      - backend
+      - mongodb
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"  
+    volumes:
+      - ./grafana:/var/lib/grafana  
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password 
+      - PORT=8000
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DATASOURCES_PROMETHEUS_URL=http://prometheus:9090
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    depends_on:
+      - prometheus
+    labels:
+      - com.prometheus.scrape=true
+      - com.prometheus.port=8000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_HOST=backend
+    hostname: myfrontendhostname
+    depends_on:
+      - backend
+volumes:
+  data:
+  
