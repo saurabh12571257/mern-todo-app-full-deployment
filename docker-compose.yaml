@@ -10,6 +10,7 @@ services:
       - com.prometheus.port=9100
     volumes:
       - data:/data/db
+      
 
   backend:
     build: ./backend
