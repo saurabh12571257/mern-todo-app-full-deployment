@@ -27,19 +27,19 @@ jobs:
     # Build and push backend image
     - name: Build and push backend
       run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend ./mern-todo-app/backend
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend ./backend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
 
     # Build and push frontend image
     - name: Build and push frontend
       run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend ./mern-todo-app/frontend
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend ./frontend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
 
     # Build and push main/root image
     - name: Build and push root
       run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-root ./mern-todo-app
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-root .
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
 
     # Deploy on EC2 using docker-compose
