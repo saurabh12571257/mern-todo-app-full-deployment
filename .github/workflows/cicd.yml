@@ -51,7 +51,11 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
-          cd /home/ubuntu/app   # make sure docker-compose.yml is here
+          cd /home/ubuntu/mern-todo-app   
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo apt-get install -y docker-compose-plugin
+          sudo usermod -aG docker ubuntu
           
           # pull latest images
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
