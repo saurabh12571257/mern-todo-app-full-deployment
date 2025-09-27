@@ -54,26 +54,25 @@ services:
       - backend
       - mongodb
 
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3001:3000"  
-    volumes:
-      - ./grafana:/var/lib/grafana  
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=password 
-      - PORT=8000
+   grafana:
+     image: grafana/grafana
+     ports:
+       - "3001:3000"
+     volumes:
+       - grafana_data:/var/lib/grafana   # Named volume, not host bind
+     environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_DATASOURCES_PROMETHEUS_URL=http://prometheus:9090
-    deploy:
+     depends_on:
+      - prometheus
+     deploy:
       resources:
         limits:
-          memory: 1G
-    depends_on:
-      - prometheus
-    labels:
-      - com.prometheus.scrape=true
-      - com.prometheus.port=8000
+         memory: 1G
+     labels:
+       - com.prometheus.scrape=true
+       - com.prometheus.port=8000
 
   frontend:
     image: saurabhdave59/mern-frontend:latest
@@ -86,4 +85,5 @@ services:
       - backend
 volumes:
   data:
+  grafana_data:
   
