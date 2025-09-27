@@ -54,7 +54,7 @@ services:
       - backend
       - mongodb
 
-   grafana:
+  grafana:
      image: grafana/grafana
      ports:
        - "3001:3000"
