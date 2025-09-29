@@ -62,7 +62,7 @@ resource "aws_instance" "app" {
   ami           = "ami-02d26659fd82cf299"
   instance_type = "t2.small"
   key_name      = aws_key_pair.deployer.key_name
-  security_groups = [aws_security_group.ec2_sg.name]
+  security_groups = [aws_security_group.ec21_sg.name]
 
   tags = {
     Name = "docker-host"
