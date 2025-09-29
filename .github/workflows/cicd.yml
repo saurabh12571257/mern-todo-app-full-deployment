@@ -31,7 +31,7 @@ jobs:
 
     - name: Terraform Apply
       working-directory: ./infra
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -var="ec2_ssh_pubkey=${{secrets.EC2_SSH_PUBLIC_KEY}}"
 
     # Get EC2 Public IP from Terraform output
     - name: Get EC2 IP

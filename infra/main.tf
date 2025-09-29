@@ -47,10 +47,14 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
+variable "ec2_ssh_pubkey" {
+  type = string
+}
+
 # --- Key Pair (use your .pub key) ---
 resource "aws_key_pair" "deployer" {
   key_name   = "my-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = var.ec2_ssh_pubkey
 }
 
 # --- EC2 Instance ---
