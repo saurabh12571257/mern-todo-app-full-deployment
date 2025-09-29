@@ -38,8 +38,10 @@ jobs:
     - name: Get EC2 IP
       id: tf-output
       working-directory: ./infra
-      run: ip=$(terraform output -raw ec2_public_ip | tr -d '\r' | tr -d '\n')
-        echo "ip=$ip" >> $GITHUB_OUTPUT
+      run: |
+       ip=$(terraform output -raw ec2_public_ip | tr -d '\r' | tr -d '\n')
+       echo "EC2_IP=$ip" >> $GITHUB_ENV
+       echo "ip=$ip" >> $GITHUB_OUTPUT
 
     - name: Debug EC2 IP
       run: echo "Deployed IP = ${{ steps.tf-output.outputs.ip }}"
