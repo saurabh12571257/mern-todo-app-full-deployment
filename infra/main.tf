@@ -3,8 +3,8 @@ provider "aws" {
 }
 
 # --- Security Group ---
-resource "aws_security_group" "ec2_sg" {
-  name        = "ec2-sg"
+resource "aws_security_group" "ec21_sg" {
+  name        = "ec2-one-sg"
   description = "Allow SSH and app traffic"
 
   ingress {
