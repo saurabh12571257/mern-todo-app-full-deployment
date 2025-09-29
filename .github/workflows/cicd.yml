@@ -41,7 +41,7 @@ jobs:
       run: |
         ip=$(terraform output -raw ec2_public_ip 2>/dev/null | tr -d '\r' | tr -d '\n')
         echo "ip=$ip" >> $GITHUB_OUTPUT
-
+        echo "EC2 IP: $ip"
 
     # 5️⃣ Log in to Docker Hub
     - name: Log in to Docker Hub
@@ -72,12 +72,11 @@ jobs:
     - name: Copy docker-compose.yml to EC2
       uses: appleboy/scp-action@master
       with:
-       host: ${{ steps.tf-output.outputs.ip }}
-       username: ubuntu
-       key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-       source: "docker-compose.yaml"
-       target: "/home/ubuntu/"
-
+        host: ${{ steps.tf-output.outputs.ip }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        source: "docker-compose.yaml"
+        target: "/home/ubuntu/"
 
     # 🔟 Deploy on EC2 with docker-compose
     - name: SSH into EC2 and deploy
@@ -89,14 +88,15 @@ jobs:
         script: |
           # Write secrets to .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > /home/ubuntu/docker-compose.env
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> /home/ubuntu/docker-comp
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> /home/ubuntu/docker-compose.env
 
-          # Install Docker + Compose if missing
+          # Install Docker if missing
           if ! command -v docker &> /dev/null; then
             sudo apt-get update
             sudo apt-get install -y docker.io
           fi
 
+          # Install Docker Compose if missing
           DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
           mkdir -p $DOCKER_CONFIG/cli-plugins
           if [ ! -f $DOCKER_CONFIG/cli-plugins/docker-compose ]; then
@@ -104,11 +104,11 @@ jobs:
             chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
           fi
 
-          # pull latest images
+          # Pull latest images
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
 
-          # restart containers
+          # Restart containers
           docker compose --env-file /home/ubuntu/docker-compose.env down || true
           docker compose --env-file /home/ubuntu/docker-compose.env up -d --build
