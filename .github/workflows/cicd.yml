@@ -1,4 +1,4 @@
-name: Build Infra + Deploy App
+name: Deploy App
 
 on:
   push:
@@ -10,83 +10,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout repo
     - name: Checkout code
       uses: actions/checkout@v3
-
-    # 2️⃣ Configure AWS credentials
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1
-
-    # 3️⃣ Set up Terraform
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
-
-    - name: Terraform Init
-      working-directory: ./infra
-      run: terraform init
-
-    - name: Terraform Apply
-      working-directory: ./infra
-      run: terraform apply -auto-approve -var="ec2_ssh_pubkey=${{ secrets.EC2_SSH_PUBLIC_KEY }}"
-
-    # 4️⃣ Get EC2 IP safely
-    - name: Get EC2 IP
-      id: tf-output
-      working-directory: ./infra
-      run: |
-       ip=$(terraform output -raw ec2_public_ip | tr -d '\r' | tr -d '\n')
-       echo "EC2_IP=$ip" >> $GITHUB_ENV
-       echo "ip=$ip" >> $GITHUB_OUTPUT
-
-    - name: Debug EC2 IP
-      run: echo "Deployed IP = ${{ steps.tf-output.outputs.ip }}"
       
 
-    # 5️⃣ Log in to Docker Hub
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # 6️⃣ Build + push backend image
     - name: Build and push backend
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend ./backend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
 
-    # 7️⃣ Build + push frontend image
     - name: Build and push frontend
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend ./frontend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
 
-    # 8️⃣ Build + push root image
     - name: Build and push root
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-root .
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
 
-    # 9️⃣ Copy docker-compose to EC2
+
     - name: Copy docker-compose.yml to EC2
       uses: appleboy/scp-action@master
       with:
-        host: ${{ steps.tf-output.outputs.ip }}
+        host: ${{ secrets.EC2_HOST }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         source: "docker-compose.yaml"
         target: "/home/ubuntu/"
 
-    # 🔟 Deploy on EC2 with docker-compose
+
     - name: SSH into EC2 and deploy
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ steps.tf-output.outputs.ip }}
+        host: ${{ secrets.EC2_HOST }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |

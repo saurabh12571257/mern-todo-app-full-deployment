@@ -1,0 +1,47 @@
+name: Build Infra
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/infra.yml'
+
+jobs:
+  infra_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Terraform Init
+      working-directory: ./infra
+      run: terraform init
+
+    - name: Terraform Apply
+      working-directory: ./infra
+      run: terraform apply -auto-approve -var="ec2_ssh_pubkey=${{ secrets.EC2_SSH_PUBLIC_KEY }}"
+
+
+    - name: Get EC2 IP
+      id: tf-output
+      working-directory: ./infra
+      run: |
+       ip=$(terraform output -raw ec2_public_ip -no-color 2>/dev/null | tr -d '\r' | tr -d '\n')
+       echo "EC2_IP=$ip"
+
+
+
