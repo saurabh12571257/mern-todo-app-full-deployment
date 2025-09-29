@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout repo
+    # 1️⃣ Checkout repo
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Configure AWS credentials
+    # 2️⃣ Configure AWS credentials
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -22,7 +22,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-south-1
 
-    # Terraform setup
+    # 3️⃣ Set up Terraform
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
 
@@ -34,80 +34,58 @@ jobs:
       working-directory: ./infra
       run: terraform apply -auto-approve -var="ec2_ssh_pubkey=${{ secrets.EC2_SSH_PUBLIC_KEY }}"
 
-    # Get EC2 Public IP from Terraform output
+    # 4️⃣ Get EC2 IP safely
     - name: Get EC2 IP
       id: tf-output
       working-directory: ./infra
       run: |
-        ip=$(terraform output -raw ec2_public_ip | tr -d '\r')
-        echo "EC2_IP=$ip" >> $GITHUB_ENV
+        ip=$(terraform output -raw ec2_public_ip 2>/dev/null | tr -d '\r' | tr -d '\n')
+        echo "ip=$ip" >> $GITHUB_OUTPUT
         echo "EC2 IP: $ip"
 
-    # Log in to Docker Hub
+    # 5️⃣ Log in to Docker Hub
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Build + Push backend image
+    # 6️⃣ Build + push backend image
     - name: Build and push backend
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend ./backend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
 
-    # Build + Push frontend image
+    # 7️⃣ Build + push frontend image
     - name: Build and push frontend
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend ./frontend
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
 
-    # Build + Push root image
+    # 8️⃣ Build + push root image
     - name: Build and push root
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-root .
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
 
-    # Copy docker-compose to EC2
+    # 9️⃣ Copy docker-compose to EC2
     - name: Copy docker-compose.yml to EC2
       uses: appleboy/scp-action@master
       with:
-        host: ${{ env.EC2_IP }}
+        host: ${{ steps.tf-output.outputs.ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         source: "docker-compose.yaml"
         target: "/home/ubuntu/"
 
-    # Deploy on EC2 with docker-compose
+    # 🔟 Deploy on EC2 with docker-compose
     - name: SSH into EC2 and deploy
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ env.EC2_IP }}
+        host: ${{ steps.tf-output.outputs.ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
+          # Write secrets to .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > /home/ubuntu/docker-compose.env
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> /home/ubuntu/docker-compose.env
-
-          # Install Docker + Compose if missing
-          if ! command -v docker &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-          fi
-
-          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-          mkdir -p $DOCKER_CONFIG/cli-plugins
-          if [ ! -f $DOCKER_CONFIG/cli-plugins/docker-compose ]; then
-            curl -SL https://github.com/docker/compose/releases/download/v2.29.6/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-            chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-          fi
-
-          # pull latest images
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mern-root
-
-          # restart containers
-          docker compose --env-file /home/ubuntu/docker-compose.env down || true
-          docker compose --env-file /home/ubuntu/docker-compose.env up -d --build
-
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> /home/ubuntu/docker-comp
