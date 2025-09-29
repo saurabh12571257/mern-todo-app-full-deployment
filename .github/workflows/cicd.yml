@@ -110,3 +110,4 @@ jobs:
           # restart containers
           docker compose --env-file /home/ubuntu/docker-compose.env down || true
           docker compose --env-file /home/ubuntu/docker-compose.env up -d --build
+
