@@ -32,6 +32,18 @@ nodemon server
 cd frontend
 npm start
 ```
+
+# Secrets to configure
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+DOCKERHUB_USERNAME
+DOCKER_PASSWORD
+EC2_HOST
+EC2_SSH_PRIVATE_KEY
+EC2_SSH_PUBLIC_KEY
+JWT_SECRET
+```
 # Live Preview
 Check live preview here [https://todo-app-b96a5.web.app/](https://todo-app-b96a5.web.app/)
 
